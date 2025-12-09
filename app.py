@@ -26,7 +26,10 @@ AUDIO_DIR = "song"
 # Firebase初期化
 if not firebase_admin._apps:
     try:
-        cred = credentials.Certificate(KEY_PATH)
+        # ★ここが修正ポイント！
+        # KEY_PATH ではなく、st.secrets から直接読み込みます
+        key_dict = json.loads(st.secrets["FIREBASE_KEY"])
+        cred = credentials.Certificate(key_dict)
         firebase_admin.initialize_app(cred)
     except Exception as e:
         st.error(f"Firebase接続エラー: {e}")
