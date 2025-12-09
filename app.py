@@ -18,14 +18,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 
-# ==========================================
-# 1. 設定 & Firebase接続
-# ==========================================
 st.set_page_config(page_title="Music Fusion Recommender", layout="wide")
 
-# パス設定（自分の環境に合わせてください）
-AUDIO_DIR = "/Users/ryota/Documents/研究室/研究1/song/"
-KEY_PATH = "serviceAccountKey.json"
+import json
+AUDIO_DIR = "song"
 
 # Firebase初期化
 if not firebase_admin._apps:
