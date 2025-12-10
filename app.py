@@ -4,6 +4,7 @@ import numpy as np
 import firebase_admin
 from firebase_admin import credentials, firestore
 import json
+import base64  # ★これを追加！
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
@@ -15,23 +16,29 @@ import matplotlib.pyplot as plt
 # ==========================================
 st.set_page_config(page_title="Music Fusion Recommender", layout="wide")
 
-# ★Web版では AUDIO_DIR (ローカルパス) は不要なので削除しました
-
-# Firebase初期化 (Web用の書き方：Secretsを使う)
+# Firebase初期化 (Base64対応版)
 if not firebase_admin._apps:
     try:
-        # Streamlit Cloudの「Secrets」から鍵情報を受け取る
-        key_dict = json.loads(st.secrets["FIREBASE_KEY"])
-        cred = credentials.Certificate(key_dict)
-        firebase_admin.initialize_app(cred)
+        # ★ここが修正ポイント！
+        # SecretsからBase64文字列を読み込み、デコードしてJSONに戻す
+        if "FIREBASE_BASE64" in st.secrets:
+            key_str = base64.b64decode(st.secrets["FIREBASE_BASE64"]).decode('utf-8')
+            key_dict = json.loads(key_str)
+            cred = credentials.Certificate(key_dict)
+            firebase_admin.initialize_app(cred)
+        else:
+            st.error("Secretsに 'FIREBASE_BASE64' が設定されていません。")
+            st.stop()
+            
     except Exception as e:
         st.error(f"Firebase接続エラー: {e}")
+        st.info("Secretsの設定（Base64文字列）を確認してください。")
         st.stop()
 
 db = firestore.client()
 
 # ==========================================
-# 2. データロード (URL取得に対応)
+# 2. データロード
 # ==========================================
 @st.cache_data
 def load_data_from_firebase():
@@ -45,14 +52,11 @@ def load_data_from_firebase():
         data = doc.to_dict()
         vec = data.get('features')
         
-        # 特徴量があるデータだけを使う
         if vec:
-            # Tempoを結合
             if 'tempo' in data:
                 vec.append(data['tempo'])
             features_list.append(vec)
             
-            # ★重要：ファイル名と一緒に「再生URL」も保存する
             filenames_list.append({
                 'name': data.get('filename', 'Unknown'),
                 'url': data.get('audio_url', None) 
@@ -63,15 +67,14 @@ def load_data_from_firebase():
 
     return np.array(features_list), np.array(filenames_list)
 
-with st.spinner('データベースから609曲の情報を取得中...'):
+with st.spinner('データベースから楽曲情報を取得中...'):
     X, song_data = load_data_from_firebase()
 
 if X is None or len(X) == 0:
     st.error("データベースにデータがありません。")
-    st.info("データのアップロードが完了しているか確認してください。")
+    st.info("アップロードと分析コードの実行が完了しているか確認してください。")
     st.stop()
 
-# 表示用のファイル名リストを作る
 filenames = [item['name'] for item in song_data]
 
 # ==========================================
@@ -168,12 +171,9 @@ with col1:
 with col2:
     st.subheader("🎯 Recommendation")
     
-    # 辞書データから情報を取り出す
     rec_data = song_data[top_rec_idx]
-    
     st.success(f"**{rec_data['name']}**")
     
-    # ★ここが重要！URLを使って再生します
     audio_url = rec_data['url']
     if audio_url:
         st.audio(audio_url)
@@ -189,6 +189,5 @@ for i, r_idx in enumerate(rec_indices[1:4]):
     with cols[i]:
         d = song_data[r_idx]
         st.write(f"**{i+2}. {d['name']}**")
-        # 他の候補もURLで再生
         if d['url']:
             st.audio(d['url'])
