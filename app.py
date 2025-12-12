@@ -8,7 +8,7 @@ import sys
 # 設定
 # ==========================================
 work_dir = "/Users/ryota/Documents/研究室/研究1/"
-key_path = "key.json"
+key_path = "key2.json"
 metadata_filename = "raw.meta.tsv" 
 metadata_file_path = os.path.join(work_dir, metadata_filename)
 separator = '\t' 
