@@ -166,7 +166,7 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("🎚️ Steering")
-    d_tempo = st.slider("Tempo", -3.0, 3.0, 0.0)
+    d_tempo = st.slider("Tempo", -5.0, 5.0, 0.0)
     d_energy = st.slider("Energy", -3.0, 3.0, 0.0)
     d_timbre = st.slider("Timbre", -3.0, 3.0, 0.0)
 
